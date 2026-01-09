@@ -170,3 +170,4 @@ function Chinesium_Render() {
     Chinesium_SaveProgress();
   };
 }
+window.Chinesium_Render = Chinesium_Render;
