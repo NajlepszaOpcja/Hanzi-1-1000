@@ -1,6 +1,3 @@
-/* ============================
-   RENDER
-============================ */
 function Chinesium_Render() {
   const grid = document.getElementById("Chinesium_WordGrid");
   const weekLabel = document.getElementById("Chinesium_WeekLabel");
@@ -9,9 +6,22 @@ function Chinesium_Render() {
 
   grid.innerHTML = "";
 
-  const words = Chinesium_State.words[`week${weekNum}`] || [];
+  // Jeśli Chinesium_State.words nie jest już podzielone na tygodnie, zrób to teraz
+  if (!Chinesium_State.wordsByWeek) {
+    const itemsPerWeek = 10; // liczba słów na tydzień
+    const weeks = {};
+    (Chinesium_State.words || []).forEach((word, index) => {
+      const wn = Math.floor(index / itemsPerWeek) + 1;
+      const key = `week${wn}`;
+      if (!weeks[key]) weeks[key] = [];
+      weeks[key].push(word);
+    });
+    Chinesium_State.wordsByWeek = weeks; // zapisujemy podział tygodniowy
+  }
 
-  if(weekNum > currentWeekNumber || words.length === 0){
+  const words = Chinesium_State.wordsByWeek[`week${weekNum}`] || [];
+
+  if (weekNum > currentWeekNumber || words.length === 0) {
     weekLabel.textContent = `Week ${weekNum} - brak słów do wyświetlenia`;
     return;
   }
@@ -22,7 +32,7 @@ function Chinesium_Render() {
   endDate.setDate(endDate.getDate() + 7);
 
   function formatDate(d) {
-    return `${d.getDate().toString().padStart(2,"0")}.${(d.getMonth()+1).toString().padStart(2,"0")}`;
+    return `${d.getDate().toString().padStart(2, "0")}.${(d.getMonth() + 1).toString().padStart(2, "0")}`;
   }
 
   weekLabel.textContent = `Week ${weekNum} (${formatDate(startDate)} - ${formatDate(endDate)})`;
@@ -93,56 +103,60 @@ function Chinesium_Render() {
           let expanded = false;
           function render(list) {
             tbody.innerHTML = "";
-            list.forEach((m,i)=>{const row=document.createElement("tr");row.innerHTML=`<td style="width:30px">${i+1}.</td><td>${m}</td>`;tbody.appendChild(row);});
+            list.forEach((m, i) => {
+              const row = document.createElement("tr");
+              row.innerHTML = `<td style="width:30px">${i + 1}.</td><td>${m}</td>`;
+              tbody.appendChild(row);
+            });
           }
           toggleBtn.onclick = () => {
-            if(!expanded){render(meaningsAll);toggleBtn.textContent="Zwiń ↑";expanded=true;} 
-            else{render(meaningsAll.slice(0,4));toggleBtn.textContent="Rozwiń ↓";expanded=false;}
+            if (!expanded) { render(meaningsAll); toggleBtn.textContent = "Zwiń ↑"; expanded = true; } 
+            else { render(meaningsAll.slice(0, 4)); toggleBtn.textContent = "Rozwiń ↓"; expanded = false; }
           };
           toggleCell.appendChild(toggleBtn);
           toggleRow.appendChild(toggleCell);
           tfoot.appendChild(toggleRow);
-          render(meaningsAll.slice(0,4));
+          render(meaningsAll.slice(0, 4));
         } else {
           const tbody = document.createElement("tbody");
           translationsTable.appendChild(tbody);
-          meaningsAll.forEach((m,i)=>{const row=document.createElement("tr");row.innerHTML=`<td style="width:30px">${i+1}.</td><td>${m}</td>`;tbody.appendChild(row);});
+          meaningsAll.forEach((m, i) => { const row = document.createElement("tr"); row.innerHTML = `<td style="width:30px">${i + 1}.</td><td>${m}</td>`; tbody.appendChild(row); });
         }
       }
 
       const remainingTable = document.createElement("table");
-      remainingTable.style.width="100%";
-      const posRow=document.createElement("tr");posRow.innerHTML=`<td>Sentence part:</td><td>${word.pos.join(", ")}</td>`;remainingTable.appendChild(posRow);
-      const freqRow=document.createElement("tr");freqRow.innerHTML=`<td>Frequency:</td><td>${word.frequency}</td>`;remainingTable.appendChild(freqRow);
-      const radicalRow=document.createElement("tr");radicalRow.innerHTML=`<td>Radical:</td><td>${word.radical??"N/A"}</td>`;remainingTable.appendChild(radicalRow);
-      const tradRow=document.createElement("tr");tradRow.innerHTML=`<td>Traditional:</td><td>${word.forms?.[0]?.traditional??"N/A"}</td>`;remainingTable.appendChild(tradRow);
-      const transcriptionsRow=document.createElement("tr");
-      const transcriptionsSelect=document.createElement("select");
-      const options=["pinyin","numeric","wadegiles","bopomofo","romatzyh"];
-      options.forEach(opt=>{const o=document.createElement("option");o.value=opt;o.textContent=opt.charAt(0).toUpperCase()+opt.slice(1);transcriptionsSelect.appendChild(o);});
-      const transcriptionsValue=document.createElement("span");
-      function updateTranscriptionDisplay(){const selected=transcriptionsSelect.value;const values=word.forms.map(f=>f.transcriptions[selected]||"N/A").join(", ");transcriptionsValue.textContent=values;}
-      transcriptionsSelect.addEventListener("change",updateTranscriptionDisplay);
+      remainingTable.style.width = "100%";
+      const posRow = document.createElement("tr"); posRow.innerHTML = `<td>Sentence part:</td><td>${word.pos.join(", ")}</td>`; remainingTable.appendChild(posRow);
+      const freqRow = document.createElement("tr"); freqRow.innerHTML = `<td>Frequency:</td><td>${word.frequency}</td>`; remainingTable.appendChild(freqRow);
+      const radicalRow = document.createElement("tr"); radicalRow.innerHTML = `<td>Radical:</td><td>${word.radical ?? "N/A"}</td>`; remainingTable.appendChild(radicalRow);
+      const tradRow = document.createElement("tr"); tradRow.innerHTML = `<td>Traditional:</td><td>${word.forms?.[0]?.traditional ?? "N/A"}</td>`; remainingTable.appendChild(tradRow);
+      const transcriptionsRow = document.createElement("tr");
+      const transcriptionsSelect = document.createElement("select");
+      const options = ["pinyin", "numeric", "wadegiles", "bopomofo", "romatzyh"];
+      options.forEach(opt => { const o = document.createElement("option"); o.value = opt; o.textContent = opt.charAt(0).toUpperCase() + opt.slice(1); transcriptionsSelect.appendChild(o); });
+      const transcriptionsValue = document.createElement("span");
+      function updateTranscriptionDisplay() { const selected = transcriptionsSelect.value; const values = word.forms.map(f => f.transcriptions[selected] || "N/A").join(", "); transcriptionsValue.textContent = values; }
+      transcriptionsSelect.addEventListener("change", updateTranscriptionDisplay);
       updateTranscriptionDisplay();
-      const tdTrans=document.createElement("td");tdTrans.appendChild(transcriptionsSelect);tdTrans.appendChild(document.createElement("br"));tdTrans.appendChild(transcriptionsValue);
-      transcriptionsRow.innerHTML="<td>Transcriptions:</td>";transcriptionsRow.appendChild(tdTrans);remainingTable.appendChild(transcriptionsRow);
-      const classifiersRow=document.createElement("tr");classifiersRow.innerHTML=`<td>Classifiers:</td><td>${word.forms?.[0]?.classifiers?.join(", ")??"N/A"}</td>`;remainingTable.appendChild(classifiersRow);
+      const tdTrans = document.createElement("td"); tdTrans.appendChild(transcriptionsSelect); tdTrans.appendChild(document.createElement("br")); tdTrans.appendChild(transcriptionsValue);
+      transcriptionsRow.innerHTML = "<td>Transcriptions:</td>"; transcriptionsRow.appendChild(tdTrans); remainingTable.appendChild(transcriptionsRow);
+      const classifiersRow = document.createElement("tr"); classifiersRow.innerHTML = `<td>Classifiers:</td><td>${word.forms?.[0]?.classifiers?.join(", ") ?? "N/A"}</td>`; remainingTable.appendChild(classifiersRow);
 
       cloneCard.appendChild(remainingTable);
 
       const modalIcon = cloneCard.querySelector(".Chinesium_Icons");
-      if(modalIcon){
-        if(word.audio && word.audio.trim()!==""){
-          const audio=new Audio(Chinesium_AUDIO_BASE+word.audio);audio.volume=0.5;
-          modalIcon.innerHTML="🔊";modalIcon.style.cursor="pointer";modalIcon.onclick=()=>audio.play();
-        } else {modalIcon.innerHTML="💩";modalIcon.style.cursor="default";}
+      if (modalIcon) {
+        if (word.audio && word.audio.trim() !== "") {
+          const audio = new Audio(Chinesium_AUDIO_BASE + word.audio); audio.volume = 0.5;
+          modalIcon.innerHTML = "🔊"; modalIcon.style.cursor = "pointer"; modalIcon.onclick = () => audio.play();
+        } else { modalIcon.innerHTML = "💩"; modalIcon.style.cursor = "default"; }
       }
 
-      const cloneStory=cloneCard.querySelector(".Chinesium_StoryInput");
-      if(cloneStory){cloneStory.addEventListener("input",e=>{word.story=e.target.value;Chinesium_SaveProgress();});}
+      const cloneStory = cloneCard.querySelector(".Chinesium_StoryInput");
+      if (cloneStory) { cloneStory.addEventListener("input", e => { word.story = e.target.value; Chinesium_SaveProgress(); }); }
 
       modalContent.appendChild(cloneCard);
-      modal.style.display="block";
+      modal.style.display = "block";
     });
 
     translationsContainer.appendChild(toggleTranslationsBtn);
@@ -150,14 +164,14 @@ function Chinesium_Render() {
     table.appendChild(translationsRow);
 
     const iconContainer = document.createElement("div");
-    iconContainer.className="Chinesium_Icons";
-    if(word.audio && word.audio.trim()!==""){const audio=new Audio(Chinesium_AUDIO_BASE+word.audio);audio.volume=0.5;iconContainer.innerHTML="🔊";iconContainer.onclick=()=>audio.play();} else {iconContainer.innerHTML="💩";}
-    card.innerHTML=`<div class="Chinesium_Hanzi"><span>${word.simplified}</span><span class="Chinesium_Star">${freqStar}</span></div>`;
+    iconContainer.className = "Chinesium_Icons";
+    if (word.audio && word.audio.trim() !== "") { const audio = new Audio(Chinesium_AUDIO_BASE + word.audio); audio.volume = 0.5; iconContainer.innerHTML = "🔊"; iconContainer.onclick = () => audio.play(); } else { iconContainer.innerHTML = "💩"; }
+    card.innerHTML = `<div class="Chinesium_Hanzi"><span>${word.simplified}</span><span class="Chinesium_Star">${freqStar}</span></div>`;
     card.appendChild(iconContainer);
     card.appendChild(table);
 
-    const textarea=document.createElement("textarea");
-    textarea.className="Chinesium_StoryInput";textarea.placeholder="Twoja historyjka...";textarea.value=word.story||"";textarea.oninput=e=>{word.story=e.target.value;Chinesium_SaveProgress();};
+    const textarea = document.createElement("textarea");
+    textarea.className = "Chinesium_StoryInput"; textarea.placeholder = "Twoja historyjka..."; textarea.value = word.story || ""; textarea.oninput = e => { word.story = e.target.value; Chinesium_SaveProgress(); };
     card.appendChild(textarea);
 
     grid.appendChild(card);
